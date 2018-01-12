@@ -1,11 +1,11 @@
 try:
     from PySide import QtGui, QtCore, uic
 except:
-    from PyQt4 import QtGui, QtCore, uic
+    from PyQt5 import QtGui, QtCore, uic, QtWidgets
 
 from Document import Document
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib import collections  as mc
 import matplotlib as mpl
@@ -16,9 +16,9 @@ def getArc(d):
     th=np.linspace(-th0,th0,30)
     return np.matrix([np.cos(th)*d,np.sin(th)*d]).transpose().tolist()
 
-class DocumentWindow(QtGui.QMainWindow):
+class DocumentWindow(QtWidgets.QMainWindow):
     def __init__(self, doc, parent=None, mdi=None):
-        QtGui.QMainWindow.__init__(self, parent)
+        QtWidgets.QMainWindow.__init__(self, parent)
         uic.loadUi('ui/document.ui', self)
 
         self.mdi = mdi
@@ -68,7 +68,7 @@ class DocumentWindow(QtGui.QMainWindow):
         self.plt.axis('equal')
         self.plt.margins(0.05)
 
-class DocumentPropertiesDialog(QtGui.QDialog):
+class DocumentPropertiesDialog(QtWidgets.QDialog):
     def __init__(self, parent = None, doc=None):
         self.doc=doc
         super(DocumentPropertiesDialog, self).__init__(parent)
@@ -98,7 +98,7 @@ class DocumentPropertiesDialog(QtGui.QDialog):
         self.doubleLift.setValue(self.doc.lift)
 
     def storeProperties(self):
-        if self.comboMode.currentIndex == 0:
+        if self.comboMode.currentIndex() == 0:
             self.doc.mode=1
         else:
             self.doc.mode=3
@@ -112,7 +112,7 @@ class DocumentPropertiesDialog(QtGui.QDialog):
     def getProperties(parent = None, doc=None):
         dialog = DocumentPropertiesDialog(parent, doc)
         result = dialog.exec_()
-        if result == QtGui.QDialog.Accepted:
+        if result:
             dialog.storeProperties()
             return True
         return False

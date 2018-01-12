@@ -6,7 +6,7 @@ from matplotlib.backends import qt_compat
 try:
     from PySide import QtGui, QtCore, uic
 except:
-    from PyQt4 import QtGui, QtCore, uic
+    from PyQt5 import QtGui, QtCore, uic, QtWidgets
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 
@@ -14,9 +14,9 @@ from Device import *
 from DocumentWindow import DocumentWindow
 from Document import Document
 
-class ApplicationWindow(QtGui.QMainWindow):
+class ApplicationWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        QtGui.QMainWindow.__init__(self)
+        QtWidgets.QMainWindow.__init__(self)
         uic.loadUi('ui/mainwindow.ui', self)
         self.menuDevice.aboutToShow.connect(self.handleUpdateDevices)
         self.menuPort.triggered.connect(self.selectPort)
@@ -31,7 +31,7 @@ class ApplicationWindow(QtGui.QMainWindow):
         self.connectTimer = QtCore.QTimer(self)
         self.connectTimer.timeout.connect(self.updateStatus)
         self.settings = QtCore.QSettings('uArm','uArmUI')
-        self.port=self.settings.value("Port").toString()
+        self.port=self.settings.value("Port")
         self.handleUpdateDevices()
         self.selectPort()
         self.documentCount=0
@@ -50,7 +50,7 @@ class ApplicationWindow(QtGui.QMainWindow):
 
     def newDocument(self):
         self.documentCount+=1
-        sub = QtGui.QMdiSubWindow()
+        sub = QtWidgets.QMdiSubWindow()
         sub.setWidget(DocumentWindow(Document(),self,sub))
         sub.setWindowTitle("Untitled"+str(self.documentCount))
         self.mdiArea.addSubWindow(sub)
@@ -58,12 +58,12 @@ class ApplicationWindow(QtGui.QMainWindow):
         return sub
 
     def openDocument(self):
-        dir=self.settings.value('OpenFilePath').toString()
-        filename = QtGui.QFileDialog.getOpenFileName(self, 'Open file', dir,"All supported files (*.uarm *.plt);;uArmUI plot files (*.uarm);;HP plotter plot files (*.plt)")
+        dir=self.settings.value('OpenFilePath')
+        (filename,ftype) = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file', dir,"All supported files (*.uarm *.plt *.svg);;uArmUI plot files (*.uarm);;HP plotter plot files (*.plt);;SVG vector graphics (*.svg)")
         if filename:
             self.settings.setValue('OpenFilePath',os.path.dirname(str(filename)))
             self.documentCount+=1
-            sub = QtGui.QMdiSubWindow()
+            sub = QtWidgets.QMdiSubWindow()
             sub.setWidget(DocumentWindow(Document.load(filename),self,sub))
             sub.setWindowTitle(filename)
             self.mdiArea.addSubWindow(sub)
@@ -81,8 +81,8 @@ class ApplicationWindow(QtGui.QMainWindow):
         wnd=self.mdiArea.activeSubWindow()
         if wnd:
             doc=wnd.widget().doc
-            dir=self.settings.value('SaveFilePath').toString()
-            filename = QtGui.QFileDialog.getSaveFileName(self, 'Save file as', dir,"uArmUI plot files (*.uarm)")
+            dir=self.settings.value('SaveFilePath')
+            (filename,ftype) = QtWidgets.QFileDialog.getSaveFileName(self, 'Save file as', dir,"uArmUI plot files (*.uarm)")
             if filename:
                 if filename[-5:]!='.uarm':
                     filename+='.uarm'
@@ -120,9 +120,9 @@ class ApplicationWindow(QtGui.QMainWindow):
         p=listDevices()
         i=1
         self.menuPort.clear()
-        ag = QtGui.QActionGroup(self, exclusive=True)
+        ag = QtWidgets.QActionGroup(self, exclusive=True)
         for port in p:
-            menu=ag.addAction(QtGui.QAction(port, self, checkable=True))
+            menu=ag.addAction(QtWidgets.QAction(port, self, checkable=True))
             self.menuPort.addAction(menu)
             if port==self.port:
                 menu.setChecked(True)
@@ -130,7 +130,7 @@ class ApplicationWindow(QtGui.QMainWindow):
 
     def selectPort(self):
         self.actionConnect.setEnabled(False)
-        for p, menu in self.ports.iteritems():
+        for p, menu in self.ports.items():
             if menu.isChecked():
                 self.port = p
                 self.statusbar.showMessage(self.port)
@@ -145,9 +145,9 @@ class ApplicationWindow(QtGui.QMainWindow):
         self.fileQuit()
 
     def about(self):
-        QtGui.QMessageBox.about(self, 'About','uArm UI')
+        QtWidgets.QMessageBox.about(self, 'About','uArm UI')
 
-class CommandDialog(QtGui.QDialog):
+class CommandDialog(QtWidgets.QDialog):
     def __init__(self, parent = None, doc=None, device=None):
         self.doc=doc
         self.device=device
@@ -216,7 +216,7 @@ class CommandDialog(QtGui.QDialog):
         dialog = CommandDialog(parent, doc,device)
         dialog.exec_()
 
-qApp = QtGui.QApplication(sys.argv)
+qApp = QtWidgets.QApplication(sys.argv)
 
 aw = ApplicationWindow()
 aw.setWindowTitle('uArmUI')

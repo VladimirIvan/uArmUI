@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import pickle
+from svgpathtools import svg2paths
 
 def distance(A, B):
     return math.sqrt(math.pow(A[0]-B[0],2) + math.pow(A[1]-B[1],2))
@@ -98,7 +99,7 @@ class Document:
             ret.append(temp)
             if len(toCheck)==0:
                 break
-            temp=closestSeg(abs(temp)-1, self.segs, toCheck)
+            temp=self.closestSeg(abs(temp)-1, toCheck)
             if temp<0:
                 self.segs[abs(temp)-1].reverse()
         for i in range(len(ret)):
@@ -122,8 +123,8 @@ class Document:
         return D
 
     def importPLYraw(self, filename):
-        self.filename=filename
-        f=open(filename)
+        self.filename=str(filename)
+        f=open(self.filename)
         cmds=f.read().split(';')
         f.close()
         unit=49.6
@@ -154,20 +155,52 @@ class Document:
             if c == 'PD':
                 self.segs[nseg-1].append(v)
         self.segs=self.segs[0:-1]
+        self.orderSegments()
+
+    def importSVG(self, filename):
+        def pt2list(pt):
+            return [297.0-pt.imag, 105.0-pt.real]
+
+        def splitCurve(seg, append, thr=0.01, minArc=0.001):
+            if append:
+                ret=[]
+            else:
+                ret = [pt2list(seg.point(0.0))]
+            t=0.0
+            cur=seg.curvature(t)
+            arcMax=seg.length()
+            while cur>0.0 and t<1.0:
+                t=min(t+max(minArc,thr/cur)/arcMax,1.0)
+                if t<1.0:
+                    ret.append([pt2list(seg.point(t))])
+                    cur=seg.curvature(t)
+            ret.append(pt2list(seg.point(1.0)))
+            return ret
+
+        paths, attributes = svg2paths(filename)
+        self.segs=[]
+        for rpath in paths:
+            for cpath in rpath.continuous_subpaths():
+                subsegs=[]
+                append=False
+                for segment in cpath:
+                    subsegs+=splitCurve(segment,append,0.01,0.001)
+                    append=True
+                self.segs.append(subsegs)
+        self.orderSegments()
 
     def orderSegments(self, order=0):
-        segs=loadSegs(filename)
-        D=joinSegs(segs)
+        D=self.joinSegs()
         if order<=0:
-            segOrd=sortGreedy(segs)
+            segOrd=self.sortGreedy()
         elif order==1:
-            segOrd=sortSegs(segs,0)
+            segOrd=self.sortSegs(0)
         elif order==2:
-            segOrd=sortSegs(segs,1)
+            segOrd=self.sortSegs(1)
         elif order==3:
-            segOrd=sortSegs(segs,2)
+            segOrd=self.sortSegs(2)
         elif order==4:
-            segOrd=sortSegs(segs,3)
+            segOrd=self.sortSegs(3)
         else:
             raise 'Unknown order!'
 
@@ -229,14 +262,17 @@ class Document:
     def save(self, filename=None):
         if filename == None:
             filename=self.filename
-        pickle.dump(self,open(filename,'w'))
+        pickle.dump(self,open(filename,'wb'))
 
     @staticmethod
     def load(filename):
         if filename[-4:]=='.plt':
             ret=Document()
-            ret.importPLYraw(filename)
+            ret.importPLYraw(str(filename))
         elif filename[-5:]=='.uarm':
-            ret=pickle.load(open(filename))
-            ret.filename=filename
+            ret=pickle.load(open(filename,'rb'))
+            ret.filename=str(filename)
+        elif filename[-4:]=='.svg':
+            ret=Document()
+            ret.importSVG(str(filename))
         return ret

@@ -2,7 +2,7 @@ import serial
 from serial.tools.list_ports import comports as list_ports
 from serial.serialutil import SerialException
 from time import sleep
-import thread
+import threading
 from Document import *
 
 def listDevices():
@@ -24,7 +24,8 @@ class Device:
             self.connected = False
 
     def startPlot(self, g, callback):
-        thread.start_new_thread( self.plot, (g, callback, ) )
+        t=threading.Thread( target = self.plot, args = (g, callback, ) )
+        t.start()
 
     def plot(self, g, callback):
         self.progress=0.0
