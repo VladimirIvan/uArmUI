@@ -45,11 +45,18 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionImport"/>
+   <addaction name="separator"/>
    <addaction name="actionProperties"/>
   </widget>
   <action name="actionProperties">
    <property name="text">
     <string>Properties</string>
+   </property>
+  </action>
+  <action name="actionImport">
+   <property name="text">
+    <string>Import</string>
    </property>
   </action>
  </widget>

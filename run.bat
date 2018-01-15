@@ -1,4 +1,4 @@
 
 title uArmUI Console
-C:\Users\Vlad\Anaconda3\python.exe -i uArmUI.py
-pause
+cd /D "%~dp0"
+C:\Users\Vlad\Anaconda3\python.exe -u uArmUI.py
