@@ -31,11 +31,10 @@ class CommandDialog(QtWidgets.QDialog):
     def commandStart(self):
         if not self.device.running:
             if self.doc.mode == 1:
-                self.doc.updateGcode()
                 self.device.setMode(1)
             else:
-                self.doc.updateGcodeDraw()
                 self.device.setMode(3)
+            self.doc.updateGcode()    
             self.device.startPlot(self.doc.gcode,self.stopCallback)
         else:
             self.device.pause=False

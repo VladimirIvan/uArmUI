@@ -19,9 +19,19 @@ class Device:
         self.running=False
         try:
             self.ser = serial.Serial(port, baudrate=115200)
-            self.connected = True
+            sleep(1.0)
+            self.readall()
+            ret=self.command('M17')=='ok'
+            self.connected = ret
+            self.readall()
+            if ret:
+                print(self.command('G5'))
         except serial.serialutil.SerialException:
             self.connected = False
+
+    def readall(self):
+        while self.ser.inWaiting()>0:
+            print(self.ser.readline().decode().strip())
 
     def startPlot(self, g, callback):
         t=threading.Thread( target = self.plot, args = (g, callback, ) )
@@ -34,6 +44,7 @@ class Device:
         self.running=True
         num=0
         self.ser.flushInput()
+        self.command('M204 P500 T500 R500')
         for i in range(0,len(g)):
             if self.stop:
                 self.command(gCodeMove(160,0,100, 1000))

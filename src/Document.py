@@ -29,10 +29,10 @@ def checkCoords(x,y,z):
     return True
 
 def gCodeMove(x,y,z,F):
-    return 'G0 X%.2f Y%.2f Z%.2f F%.2f\n'%(x, y, z, F)
+    return 'G0 X%.2f Y%.2f Z%.2f F%.2f'%(x, y, z, F)
 
 def gCodeBurn(x,y,z,F):
-    return 'G1 X%.2f Y%.2f Z%.2f F%.2f\n'%(x, y, z, F)
+    return 'G1 X%.2f Y%.2f Z%.2f F%.2f'%(x, y, z, F)
 
 class Document:
     def __init__(self):
@@ -47,6 +47,19 @@ class Document:
         self.filename=''
         self.mode=1
         self.objects=[]
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state['filename']
+        del state['segs']
+        del state['gcode']
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self.filename=''
+        self.segs=[]
+        self.gcode=[]
 
     def sortSegs(self, dir=0):
         n = len(self.segs)
@@ -121,7 +134,7 @@ class Document:
                 break
             i=a.argmax()
             j=D.argmin(1)[i]
-            (self.segs,D)=joinSegsDist(i,j,self.segs,D)
+            self.joinSegsDist(i,j,D)
         return D
 
     def orderSegments(self, order=0):
@@ -156,11 +169,21 @@ class Document:
                 self.travelDist+=distance(self.segs[i-1][-1], self.segs[i][0])
 
     def updateGcode(self):
-        self.gcode = []
         self.segs = []
         for obj in self.objects:
-            self.segs+=obj.segs
+            for seg in obj.segs:
+                newSeg=[]
+                for pt in seg:
+                    newSeg.append(obj.transformPoint(pt))
+                self.segs.append(newSeg)
         self.orderSegments()
+        if self.mode == 1:
+            self.updateGcodeBurn()
+        else:
+            self.updateGcodeDraw()
+
+    def updateGcodeBurn(self):
+        self.gcode = []       
         z=self.height+self.zoffset
         for i in range(len(self.segs)):
             v=self.segs[i][0]
@@ -179,10 +202,6 @@ class Document:
 
     def updateGcodeDraw(self):
         self.gcode = []
-        self.segs = []
-        for obj in self.objects:
-            self.segs+=obj.segs
-        self.orderSegments()
         z=self.height+self.zoffset
         for i in range(len(self.segs)):
             v=self.segs[i][0]
@@ -200,7 +219,7 @@ class Document:
             v=self.segs[i][-1]
             if not checkCoords(v[0], v[1], z):
                 raise('Invalid coordinates (%f, %f, %f)'%(v[0], v[1], z))
-            self.gcode.append(gCodeMove(v[0], v[1], z+self.lift, self.F))
+            self.gcode.append(gCodeMove(v[0], v[1], z+self.lift, self.F0))
 
     def save(self, filename=None):
         if filename == None:
@@ -232,4 +251,6 @@ class Document:
             ret=Document()
             ret.importObject(str(filename),'svg')
             ret.filename=str(filename)
+        for obj in ret.objects:
+            obj.updateBoundingBox()
         return ret

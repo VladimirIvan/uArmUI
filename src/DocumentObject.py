@@ -9,6 +9,30 @@ class DocumentObject:
         self.updateBoundingBox()
         self.deselectCallback=None
         self.selectCallback=None
+        self.moving = False
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state['deselectCallback']
+        del state['selectCallback']
+        del state['moving']
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self.deselectCallback=None
+        self.selectCallback=None
+        self.moving = False
+
+    def onselect(self,rect, mode=1):
+        if rect[0]<self.bbox[0] and rect[1]<self.bbox[1] and rect[2]>self.bbox[2] and rect[3]>self.bbox[3]:
+            if mode==1 or mode==2:
+                self.select()
+            elif mode==3:
+                self.deselect()
+        else:
+            if mode==1:
+                self.deselect()
 
     def select(self):
         if(self.selectCallback):
@@ -24,20 +48,23 @@ class DocumentObject:
                 self.transform[i,j] = trans[i,j]
         self.updateBoundingBox()
 
+    def transformPoint(self, pt):
+        return (self.transform*np.matrix([[pt[0],pt[1],1]]).transpose()).transpose().tolist()[0][0:2]
+
     def updateBoundingBox(self):
-        self.bbox=[0,0,0,0]
+        self.bbox=[np.inf,np.inf,-np.inf,-np.inf]
         self.center=[0,0]
         for seg in self.segs:
             for pt in seg:
-                ptt=self.transform*np.matrix([[pt[0],pt[1],1]]).transpose()
+                ptt=self.transformPoint(pt)
                 self.bbox[0]=min(self.bbox[0],ptt[0])
                 self.bbox[1]=min(self.bbox[1],ptt[1])
-                self.bbox[2]=max(self.bbox[0],ptt[0])
-                self.bbox[3]=max(self.bbox[1],ptt[1])
+                self.bbox[2]=max(self.bbox[2],ptt[0])
+                self.bbox[3]=max(self.bbox[3],ptt[1])
         self.center=[(self.bbox[0]+self.bbox[2])*0.5,(self.bbox[1]+self.bbox[3])*0.5]
 
     def importPLYraw(self, filename):
-        f=open(self.filename)
+        f=open(filename)
         cmds=f.read().split(';')
         f.close()
         unit=49.6
@@ -154,7 +181,7 @@ class DocumentObject:
                 subsegs=[]
                 append=False
                 for segment in cpath:
-                    subsegs+=splitCurve(segment,append,trans[i],0.02,0.05)
+                    subsegs+=splitCurve(segment,append,trans[i],thr=0.03, minArc=0.5)
                     append=True
                 self.segs.append(subsegs)
             i+=1

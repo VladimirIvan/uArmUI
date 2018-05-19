@@ -2,13 +2,18 @@ from matplotlib.widgets import AxesWidget
 import numpy as np
 
 class SnaptoCursor(AxesWidget):
-    def __init__(self, parent, useblit=False, snapDist=5, snapType={'Segments':True,'SegmentEnds':False, 'Origin':True, 'Grid':True}):
+    mousex = 0.0
+    mousey = 0.0
+    snapping = False
+
+    def __init__(self, parent, useblit=False, snapDist=5, snapType={'Segments':False,'SegmentEnds':False, 'Origin':True, 'Grid':True, 'Centers':True}):
         self.parent = parent
         self.doc = self.parent.doc
         self.ax = self.parent.plt
         self.canvas = self.parent.canvas
         self.snapDist = snapDist
         self.snapType = self.setSnapType(snapType)
+        SnaptoCursor.snapping = False
         
         AxesWidget.__init__(self, self.ax)
 
@@ -29,11 +34,13 @@ class SnaptoCursor(AxesWidget):
         self.snapToGrid = False
         self.snapToOrigin = False
         self.snapToSegs = False
+        self.snapToCenters = False
         if type.get('All'):
             self.snapToSegEnds = True
             self.snapToGrid = True
             self.snapToOrigin = True
             self.snapToSegs = True
+            self.snapToCenters = True
         if type.get('Grid'):
             self.snapToGrid = True
         if type.get('Origin'):
@@ -42,14 +49,25 @@ class SnaptoCursor(AxesWidget):
             self.snapToSegs = True
         if type.get('SegmentEnds'):
             self.snapToSegEnds = True
+        if type.get('Centers'):
+            self.snapToCenters = True
 
 
     def findSnapPoints(self, x, y):
         pos = self.ax.transData.transform(np.array([x, y]))
         minpt=pos
         mindist=np.inf
+        if self.snapToCenters:
+            for obj in self.doc.objects:
+                if obj.moving: continue
+                pt=obj.center
+                d=np.linalg.norm(self.ax.transData.transform(pt)-pos)
+                if d<mindist:
+                    mindist=d
+                    minpt=pt
         if self.snapToSegEnds:
             for obj in self.doc.objects:
+                if obj.moving: continue
                 for seg in obj.segs:
                     pts = [np.array(seg[0]),np.array(seg[-1])]
                     for pt in pts:
@@ -60,6 +78,7 @@ class SnaptoCursor(AxesWidget):
                             minpt=ptt
         if self.snapToSegs:
             for obj in self.doc.objects:
+                if obj.moving: continue
                 for seg in obj.segs:
                     for pta in seg:
                         pt=((obj.transform*np.matrix([[pta[0],pta[1],1]]).transpose())[0:2,0]).transpose().tolist()[0]
@@ -89,6 +108,7 @@ class SnaptoCursor(AxesWidget):
 
     def onmove(self, event):
         """on mouse motion draw the cursor if visible"""
+        SnaptoCursor.snapping = False
         if self.ignore(event):
             return
         if not self.canvas.widgetlock.available(self):
@@ -107,6 +127,9 @@ class SnaptoCursor(AxesWidget):
         self.cursor.set_xdata(x)
         self.cursor.set_ydata(y)
         self.cursor.set_visible(vis)
+        SnaptoCursor.mousex = x
+        SnaptoCursor.mousey = y
+        SnaptoCursor.snapping = vis
         self._update()
 
     def _update(self):

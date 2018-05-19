@@ -116,15 +116,7 @@ class DocumentWindow(QtWidgets.QMainWindow):
 
     def onselect(self, eclick, erelease):
         'eclick and erelease are matplotlib events at press and release'
-        print(' startposition : (%f, %f)' % (eclick.xdata, eclick.ydata))
-        print(' endposition   : (%f, %f)' % (erelease.xdata, erelease.ydata))
-        print(' used button   : ', eclick.button)
-
-    def toggle_selector(self, event):
-        print(' Key pressed.')
-        if event.key in ['Q', 'q'] and self.selector.active:
-            print(' RectangleSelector deactivated.')
-            self.selector.set_active(False)
-        if event.key in ['A', 'a'] and not self.selector.active:
-            print(' RectangleSelector activated.')
-            self.selector.set_active(True)
+        print(eclick.button)
+        if eclick.button==3:
+            for obj in self.doc.objects:
+                obj.onselect([min(eclick.xdata,erelease.xdata),min(eclick.ydata,erelease.ydata),max(eclick.xdata,erelease.xdata),max(eclick.ydata,erelease.ydata)])
