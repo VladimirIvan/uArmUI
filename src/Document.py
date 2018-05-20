@@ -34,6 +34,9 @@ def gCodeMove(x,y,z,F):
 def gCodeBurn(x,y,z,F):
     return 'G1 X%.2f Y%.2f Z%.2f F%.2f'%(x, y, z, F)
 
+def gCodeDelay(t):
+    return 'G2004 X%.2f'%(t,)
+
 class Document:
     def __init__(self):
         self.segs=[]
@@ -190,11 +193,16 @@ class Document:
             if not checkCoords(v[0], v[1], z):
                 raise('Invalid coordinates (%f, %f, %f)'%(v[0], v[1], z))
             self.gcode.append(gCodeMove(v[0], v[1], z, self.F0))
+            self.gcode.append(gCodeDelay(1000000))
+            self.gcode.append(gCodeMove(v[0], v[1], z, self.F/2.0))
             for j in range(1,len(self.segs[i])):
                 v=self.segs[i][j]
                 if not checkCoords(v[0], v[1], z):
                     raise('Invalid coordinates (%f, %f, %f)'%(v[0], v[1], z))
                 self.gcode.append(gCodeBurn(v[0], v[1], z, self.F))
+            v=self.segs[i][-1]
+            self.gcode.append(gCodeMove(v[0], v[1], z, self.F))
+            self.gcode.append(gCodeDelay(500000))
         v=self.segs[-1][0]
         if not checkCoords(v[0], v[1], z):
             raise('Invalid coordinates (%f, %f, %f)'%(v[0], v[1], z))

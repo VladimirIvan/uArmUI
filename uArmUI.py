@@ -117,7 +117,6 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
     def handleUpdateDevices(self):
         p=listDevices()
-        i=1
         self.menuPort.clear()
         ag = QtWidgets.QActionGroup(self, exclusive=True)
         for port in p:

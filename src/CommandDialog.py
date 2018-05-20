@@ -27,6 +27,7 @@ class CommandDialog(QtWidgets.QDialog):
         self.pushStart.setEnabled(False)
         self.pushStop.setEnabled(False)
         self.pushPause.setEnabled(False)
+        self.close()
 
     def commandStart(self):
         if not self.device.running:

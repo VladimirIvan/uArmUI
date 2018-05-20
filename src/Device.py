@@ -24,8 +24,7 @@ class Device:
             ret=self.command('M17')=='ok'
             self.connected = ret
             self.readall()
-            if ret:
-                print(self.command('G5'))
+            self.park()
         except serial.serialutil.SerialException:
             self.connected = False
 
@@ -44,7 +43,7 @@ class Device:
         self.running=True
         num=0
         self.ser.flushInput()
-        self.command('M204 P500 T500 R500')
+        self.command('M204 P900 T900 R900')
         for i in range(0,len(g)):
             if self.stop:
                 self.command(gCodeMove(160,0,100, 1000))
@@ -68,12 +67,14 @@ class Device:
             self.progress = float(num)/float(len(g))*100.0
         self.running=False
         self.stop=True
+        self.park()
         callback()
 
     def isConnected(self):
         return self.connected
 
     def disconnect(self):
+        self.park()
         self.ser.close()
         self.connected = False
 
@@ -117,5 +118,8 @@ class Device:
     def setServo(self, val):
         if val>=0 and val<=180:
             return self.command('G2202 N3 V%0.2f'%val)
+
+    def park(self):
+        self.command('G2201 S%0.2f R%0.2f H%0.2f F%0.2f'%(140,90.0,80,10000))
 
 
